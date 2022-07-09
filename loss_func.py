@@ -60,10 +60,10 @@ class DualLoss(SupConLoss):
         super().__init__(alpha, temp)
 
     def forward(self, outputs, targets):
-        normed_cls_feats = F.normalize(outputs['cls_feats'], dim=-1)
-        normed_label_feats = F.normalize(outputs['label_feats'], dim=-1)
-        normed_pos_label_feats = torch.gather(normed_label_feats, dim=1, index=targets.reshape(-1, 1, 1).expand(-1, 1, normed_label_feats.size(-1))).squeeze(1)
-        ce_loss = (1 - self.alpha) * self.xent_loss(outputs['predicts'], targets)
+        normed_cls_feats = F.normalize(outputs['cls_feats'], dim=-1)    #[B,H]
+        normed_label_feats = F.normalize(outputs['label_feats'], dim=-1) #[B,n,H] n为类别数目
+        normed_pos_label_feats = torch.gather(normed_label_feats, dim=1, index=targets.reshape(-1, 1, 1).expand(-1, 1, normed_label_feats.size(-1))).squeeze(1) #把golden对应的标签表示提取出来 [B,H]
+        ce_loss = (1 - self.alpha) * self.xent_loss(outputs['predicts'], targets)  #交叉熵损失函数
         cl_loss_1 = 0.5 * self.alpha * self.nt_xent_loss(normed_pos_label_feats, normed_cls_feats, targets)
         cl_loss_2 = 0.5 * self.alpha * self.nt_xent_loss(normed_cls_feats, normed_pos_label_feats, targets)
         return ce_loss + cl_loss_1 + cl_loss_2
